@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-from flask import Flask, make_response, jsonify
+from flask import Flask, jsonify, make_response
+from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 
 from models import db, Bakery, BakedGood
@@ -18,21 +19,53 @@ db.init_app(app)
 def index():
     return '<h1>Bakery GET API</h1>'
 
+# Route 1: GET /bakeries - returns a list of JSON objects for all bakeries
 @app.route('/bakeries')
 def bakeries():
-    return ''
+    bakeries = Bakery.query.all()
+    bakeries_dict = [bakery.to_dict() for bakery in bakeries]
+    
+    return jsonify(bakeries_dict), 200
 
+# Route 2: GET /bakeries/<int:id> - returns a single bakery with its baked goods
 @app.route('/bakeries/<int:id>')
 def bakery_by_id(id):
-    return ''
+    bakery = Bakery.query.filter(Bakery.id == id).first()
+    
+    if bakery is None:
+        response = make_response(
+            jsonify({'error': 'Bakery not found'}),
+            404
+        )
+        return response
+    
+    bakery_dict = bakery.to_dict()
+    
+    return jsonify(bakery_dict), 200
 
+# Route 3: GET /baked_goods/by_price - returns baked goods sorted by price in descending order
 @app.route('/baked_goods/by_price')
 def baked_goods_by_price():
-    return ''
+    baked_goods = BakedGood.query.order_by(BakedGood.price.desc()).all()
+    baked_goods_dict = [baked_good.to_dict() for baked_good in baked_goods]
+    
+    return jsonify(baked_goods_dict), 200
 
+# Route 4: GET /baked_goods/most_expensive - returns the single most expensive baked good
 @app.route('/baked_goods/most_expensive')
 def most_expensive_baked_good():
-    return ''
+    baked_good = BakedGood.query.order_by(BakedGood.price.desc()).limit(1).first()
+    
+    if baked_good is None:
+        response = make_response(
+            jsonify({'error': 'No baked goods found'}),
+            404
+        )
+        return response
+    
+    baked_good_dict = baked_good.to_dict()
+    
+    return jsonify(baked_good_dict), 200
 
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
